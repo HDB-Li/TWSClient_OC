@@ -16,6 +16,33 @@
 
 class EClientSocket;
 
+struct UpdatePortfolioData {
+    Contract contract = Contract();
+    double position = 0;
+    double marketPrice = 0;
+    double marketValue = 0;
+    double averageCost = 0;
+    double unrealizedPNL = 0;
+    double realizedPNL = 0;
+    std::string accountName = "";
+};
+
+struct Message {
+    enum class Type {
+        Unknown,
+        Disconnect,
+        UpdatePortfolio,
+        AccountDownloadFinish
+    };
+    
+    Message() : Message(Type::Unknown) {}
+    Message(Type type_) : type(type_) {}
+    
+    Type type = Type::Unknown;
+    
+    UpdatePortfolioData updatePortfolioData;
+};
+
 //! [ewrapperimpl]
 class TWSClient : public EWrapper
 {
@@ -26,15 +53,17 @@ public:
 	~TWSClient();
 
 	void setConnectOptions(const std::string&);
-    
+    typedef std::function<void(const Message&)> Observer;
 public:
 
 	bool connect(const char * host, int port, int clientId = 0);
 	void disconnect() const;
 	bool isConnected() const;
 
+    void setCallback(Observer observer_);
     void executeOrder(const Contract &contract, const Order &order);
-    void accountOperations();
+    void reqAccountUpdates(bool subscribe, const std::string &acctCode);
+    void processMsgs();
     std::string getVersion();
     
 public:
@@ -58,6 +87,7 @@ private:
 	EReader *m_pReader;
     bool m_extraAuth;
 	std::string m_bboExchange;
+    Observer m_observer;
 };
 
 #endif

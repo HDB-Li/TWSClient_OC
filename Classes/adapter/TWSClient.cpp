@@ -66,7 +66,7 @@ bool TWSClient::connect(const char *host, int port, int clientId)
         m_pReader = new EReader(m_pClient, &m_osSignal);
 		m_pReader->start();
 		//! [ereader]
-	}
+    }
 	else
 		printf( "Cannot connect to %s:%d clientId:%d\n", m_pClient->host().c_str(), m_pClient->port(), clientId);
 
@@ -76,7 +76,7 @@ bool TWSClient::connect(const char *host, int port, int clientId)
 void TWSClient::disconnect() const
 {
 	m_pClient->eDisconnect();
-
+    m_observer(Message(Message::Type::Disconnect));
 	printf ( "Disconnected\n");
 }
 
@@ -87,6 +87,9 @@ bool TWSClient::isConnected() const
 
 void TWSClient::executeOrder(const Contract &contract, const Order &order) {
     m_pClient->placeOrder(m_orderId++, contract, order);
+}
+
+void TWSClient::processMsgs() {
     m_pReader->processMsgs();
 }
 
@@ -95,66 +98,13 @@ void TWSClient::setConnectOptions(const std::string& connectOptions)
 	m_pClient->setConnectOptions(connectOptions);
 }
 
-void TWSClient::accountOperations()
-{
-    /*** Requesting managed accounts***/
-    //! [reqmanagedaccts]
-    m_pClient->reqManagedAccts();
-    //! [reqmanagedaccts]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    /*** Requesting accounts' summary ***/
-//    //! [reqaaccountsummary]
-//    m_pClient->reqAccountSummary(9001, "All", AccountSummaryTags::getAllTags());
-//    //! [reqaaccountsummary]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    //! [reqaaccountsummaryledger]
-//    m_pClient->reqAccountSummary(9002, "All", "$LEDGER");
-//    //! [reqaaccountsummaryledger]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    //! [reqaaccountsummaryledgercurrency]
-//    m_pClient->reqAccountSummary(9003, "All", "$LEDGER:EUR");
-//    //! [reqaaccountsummaryledgercurrency]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    //! [reqaaccountsummaryledgerall]
-//    m_pClient->reqAccountSummary(9004, "All", "$LEDGER:ALL");
-//    //! [reqaaccountsummaryledgerall]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    //! [cancelaaccountsummary]
-//    m_pClient->cancelAccountSummary(9001);
-//    m_pClient->cancelAccountSummary(9002);
-//    m_pClient->cancelAccountSummary(9003);
-//    m_pClient->cancelAccountSummary(9004);
-//    //! [cancelaaccountsummary]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    /*** Subscribing to an account's information. Only one at a time! ***/
-//    //! [reqaaccountupdates]
-//    m_pClient->reqAccountUpdates(true, "U150462");
-//    //! [reqaaccountupdates]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    //! [cancelaaccountupdates]
-//    m_pClient->reqAccountUpdates(false, "U150462");
-//    //! [cancelaaccountupdates]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//
-//    //! [reqaaccountupdatesmulti]
-//    m_pClient->reqAccountUpdatesMulti(9002, "U150462", "EUstocks", true);
-//    //! [reqaaccountupdatesmulti]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//
-//    /*** Requesting all accounts' positions. ***/
-//    //! [reqpositions]
-//    m_pClient->reqPositions();
-//    //! [reqpositions]
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//    //! [cancelpositions]
-//    m_pClient->cancelPositions();
-//    //! [cancelpositions]
-//
-//    //! [reqpositionsmulti]
-//    m_pClient->reqPositionsMulti(9003, "U150462", "EUstocks");
-//    //! [reqpositionsmulti]
+void TWSClient::setCallback(Observer observer_) {
+    m_observer = observer_;
+}
 
-//    m_state = ST_ACCOUNTOPERATIONS_ACK;
+void TWSClient::reqAccountUpdates(bool subscribe, const std::string &acctCode)
+{
+    m_pClient->reqAccountUpdates(subscribe, acctCode);
 }
 
 std::string TWSClient::getVersion() {
@@ -237,14 +187,12 @@ void TWSClient::orderStatus(OrderId orderId, const std::string& status, double f
 }
 //! [orderstatus]
 
-//extern void tws_message_open_order_callback( OrderId orderId, const Contract& contract, const Order& order, const OrderState& orderState);
 //! [openorder]
 void TWSClient::openOrder( OrderId orderId, const Contract& contract, const Order& order, const OrderState& orderState) {
 	printf( "OpenOrder. PermId: %d, ClientId: %ld, OrderId: %ld, Account: %s, Symbol: %s, SecType: %s, Exchange: %s:, Action: %s, OrderType:%s, TotalQty: %g, CashQty: %g, "
 	"LmtPrice: %g, AuxPrice: %g, Status: %s\n", 
 		order.permId, order.clientId, orderId, order.account.c_str(), contract.symbol.c_str(), contract.secType.c_str(), contract.exchange.c_str(), 
 		order.action.c_str(), order.orderType.c_str(), order.totalQuantity, order.cashQty == UNSET_DOUBLE ? 0 : order.cashQty, order.lmtPrice, order.auxPrice, orderState.status.c_str());
-//    tws_message_open_order_callback(orderId, contract, order, orderState);
 }
 //! [openorder]
 
@@ -271,6 +219,18 @@ void TWSClient::updatePortfolio(const Contract& contract, double position,
                                     double marketPrice, double marketValue, double averageCost,
                                     double unrealizedPNL, double realizedPNL, const std::string& accountName){
 	printf("UpdatePortfolio. %s, %s @ %s: Position: %g, MarketPrice: %g, MarketValue: %g, AverageCost: %g, UnrealizedPNL: %g, RealizedPNL: %g, AccountName: %s\n", (contract.symbol).c_str(), (contract.secType).c_str(), (contract.primaryExchange).c_str(), position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName.c_str());
+    UpdatePortfolioData data = UpdatePortfolioData();
+    data.contract = contract;
+    data.position = position;
+    data.marketPrice = marketPrice;
+    data.marketValue = marketValue;
+    data.averageCost = averageCost;
+    data.unrealizedPNL = unrealizedPNL;
+    data.realizedPNL = realizedPNL;
+    data.accountName = accountName;
+    Message msg = Message(Message::Type::UpdatePortfolio);
+    msg.updatePortfolioData = data;
+    m_observer(msg);
 }
 //! [updateportfolio]
 
@@ -282,6 +242,8 @@ void TWSClient::updateAccountTime(const std::string& timeStamp) {
 
 //! [accountdownloadend]
 void TWSClient::accountDownloadEnd(const std::string& accountName) {
+    m_pClient->reqAccountUpdates(false, accountName);
+    m_observer(Message(Message::Type::AccountDownloadFinish));
 	printf( "Account download finished: %s\n", accountName.c_str());
 }
 //! [accountdownloadend]
