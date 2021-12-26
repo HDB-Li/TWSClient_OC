@@ -139,6 +139,11 @@ void TWSClient::currentTime( long time)
 void TWSClient::error(int id, int errorCode, const std::string& errorString)
 {
 	printf( "Error. Id: %d, Code: %d, Msg: %s\n", id, errorCode, errorString.c_str());
+    Message msg = Message(Message::Type::Log);
+    LogData logData = LogData();
+    logData.log = "Error. Id: " + std::to_string(id) + ", Code: " + std::to_string(errorCode) + ", Msg: " + errorString.c_str();
+    msg.logData = logData;
+    m_observer(msg);
 }
 //! [error]
 
@@ -184,6 +189,11 @@ void TWSClient::orderStatus(OrderId orderId, const std::string& status, double f
 		double remaining, double avgFillPrice, int permId, int parentId,
 		double lastFillPrice, int clientId, const std::string& whyHeld, double mktCapPrice){
 	printf("OrderStatus. Id: %ld, Status: %s, Filled: %g, Remaining: %g, AvgFillPrice: %g, PermId: %d, LastFillPrice: %g, ClientId: %d, WhyHeld: %s, MktCapPrice: %g\n", orderId, status.c_str(), filled, remaining, avgFillPrice, permId, lastFillPrice, clientId, whyHeld.c_str(), mktCapPrice);
+    Message msg = Message(Message::Type::Log);
+    LogData logData = LogData();
+    logData.log = "OrderStatus. Id: " + std::to_string(orderId) + ", Status: " + status.c_str() + ", Filled: " + std::to_string(filled) + ", Remaining: " + std::to_string(remaining) + ", AvgFillPrice: " + std::to_string(avgFillPrice) + ", PermId: " + std::to_string(permId) + ", LastFillPrice: " + std::to_string(lastFillPrice) + ", ClientId: " + std::to_string(clientId) + ", WhyHeld: " + whyHeld.c_str() + ", MktCapPrice: " + std::to_string(mktCapPrice);
+    msg.logData = logData;
+    m_observer(msg);
 }
 //! [orderstatus]
 
@@ -193,6 +203,12 @@ void TWSClient::openOrder( OrderId orderId, const Contract& contract, const Orde
 	"LmtPrice: %g, AuxPrice: %g, Status: %s\n", 
 		order.permId, order.clientId, orderId, order.account.c_str(), contract.symbol.c_str(), contract.secType.c_str(), contract.exchange.c_str(), 
 		order.action.c_str(), order.orderType.c_str(), order.totalQuantity, order.cashQty == UNSET_DOUBLE ? 0 : order.cashQty, order.lmtPrice, order.auxPrice, orderState.status.c_str());
+    Message msg = Message(Message::Type::Log);
+    LogData logData = LogData();
+    logData.log = "OpenOrder. PermId: " + std::to_string(order.permId) + ", ClientId: " + std::to_string(order.clientId) + ", OrderId: " + std::to_string(orderId) + ", Account: " + order.account.c_str() + ", Symbol: " + contract.symbol.c_str() + ", SecType: " + contract.secType.c_str() + ", Exchange: " + contract.exchange.c_str() + ":, Action: " + order.action.c_str() + ", OrderType:" + order.orderType.c_str() + ", TotalQty: " + std::to_string(order.totalQuantity) + ", CashQty: " + std::to_string(order.cashQty == UNSET_DOUBLE ? 0 : order.cashQty) + ", LmtPrice: " + std::to_string(order.lmtPrice) + ", AuxPrice: " + std::to_string(order.auxPrice) + ", Status: " + orderState.status.c_str();
+    msg.logData = logData;
+    m_observer(msg);
+    
 }
 //! [openorder]
 

@@ -16,6 +16,10 @@
 
 class EClientSocket;
 
+struct LogData {
+    std::string log = "";
+};
+
 struct UpdatePortfolioData {
     Contract contract = Contract();
     double position = 0;
@@ -30,9 +34,10 @@ struct UpdatePortfolioData {
 struct Message {
     enum class Type {
         Unknown,
+        Log,
         Disconnect,
         UpdatePortfolio,
-        AccountDownloadFinish
+        AccountDownloadFinish,
     };
     
     Message() : Message(Type::Unknown) {}
@@ -41,6 +46,7 @@ struct Message {
     Type type = Type::Unknown;
     
     UpdatePortfolioData updatePortfolioData;
+    LogData logData;
 };
 
 //! [ewrapperimpl]
