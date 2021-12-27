@@ -31,13 +31,32 @@ struct UpdatePortfolioData {
     std::string accountName = "";
 };
 
+struct TickPriceData {
+    TickerId tickerId = -1;
+    TickType field = NOT_SET;
+    double price = -1;
+};
+
+struct TickStringData {
+    TickerId tickerId = -1;
+    int tickType = -1;
+    std::string value = "";
+};
+
+struct UpdateAccountValueData {
+    std::string key = "";
+    std::string value = "";
+};
+
 struct Message {
     enum class Type {
         Unknown,
         Log,
-        Disconnect,
         UpdatePortfolio,
         AccountDownloadFinish,
+        TickPrice,
+        TickString,
+        UpdateAccountValue,
     };
     
     Message() : Message(Type::Unknown) {}
@@ -45,8 +64,11 @@ struct Message {
     
     Type type = Type::Unknown;
     
-    UpdatePortfolioData updatePortfolioData;
     LogData logData;
+    UpdatePortfolioData updatePortfolioData;
+    TickPriceData tickPriceData;
+    TickStringData tickStringData;
+    UpdateAccountValueData updateAccountValueData;
 };
 
 //! [ewrapperimpl]
@@ -70,6 +92,9 @@ public:
     void executeOrder(const Contract &contract, const Order &order);
     void reqAccountUpdates(bool subscribe, const std::string &acctCode);
     void processMsgs();
+    TickerId reqMktData(const Contract &contract);
+    void cancelMktData(long tickerId);
+    void reqMarketDataType(int type);
     std::string getVersion();
     
 public:
@@ -90,6 +115,7 @@ private:
 	//! [socket_declare]
 
 	OrderId m_orderId;
+    TickerId m_tickerId;
 	EReader *m_pReader;
     bool m_extraAuth;
 	std::string m_bboExchange;

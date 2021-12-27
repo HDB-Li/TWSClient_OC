@@ -76,7 +76,11 @@ bool TWSClient::connect(const char *host, int port, int clientId)
 void TWSClient::disconnect() const
 {
 	m_pClient->eDisconnect();
-    m_observer(Message(Message::Type::Disconnect));
+    Message msg = Message(Message::Type::Log);
+    LogData logData = LogData();
+    logData.log = "Disconnected";
+    msg.logData = logData;
+    m_observer(msg);
 	printf ( "Disconnected\n");
 }
 
@@ -91,6 +95,20 @@ void TWSClient::executeOrder(const Contract &contract, const Order &order) {
 
 void TWSClient::processMsgs() {
     m_pReader->processMsgs();
+}
+
+TickerId TWSClient::reqMktData(const Contract &contract) {
+    m_tickerId++;
+    m_pClient->reqMktData(m_tickerId, contract, "258", false, false, TagValueListSPtr());
+    return m_tickerId;
+}
+
+void TWSClient::cancelMktData(long tickerId) {
+    m_pClient->cancelMktData(tickerId);
+}
+
+void TWSClient::reqMarketDataType(int type) {
+    m_pClient->reqMarketDataType(type);
 }
 
 void TWSClient::setConnectOptions(const std::string& connectOptions)
@@ -150,6 +168,13 @@ void TWSClient::error(int id, int errorCode, const std::string& errorString)
 //! [tickprice]
 void TWSClient::tickPrice( TickerId tickerId, TickType field, double price, const TickAttrib& attribs) {
 	printf( "Tick Price. Ticker Id: %ld, Field: %d, Price: %g, CanAutoExecute: %d, PastLimit: %d, PreOpen: %d\n", tickerId, (int)field, price, attribs.canAutoExecute, attribs.pastLimit, attribs.preOpen);
+    Message msg = Message(Message::Type::TickPrice);
+    TickPriceData tickPriceData = TickPriceData();
+    tickPriceData.tickerId = tickerId;
+    tickPriceData.field = field;
+    tickPriceData.price = price;
+    msg.tickPriceData = tickPriceData;
+    m_observer(msg);
 }
 //! [tickprice]
 
@@ -176,6 +201,13 @@ void TWSClient::tickGeneric(TickerId tickerId, TickType tickType, double value) 
 //! [tickstring]
 void TWSClient::tickString(TickerId tickerId, TickType tickType, const std::string& value) {
 	printf( "Tick String. Ticker Id: %ld, Type: %d, Value: %s\n", tickerId, (int)tickType, value.c_str());
+    Message msg = Message(Message::Type::TickString);
+    TickStringData tickStringData = TickStringData();
+    tickStringData.tickerId = tickerId;
+    tickStringData.tickType = (int)tickType;
+    tickStringData.value = value;
+    msg.tickStringData = tickStringData;
+    m_observer(msg);
 }
 //! [tickstring]
 
@@ -227,6 +259,12 @@ void TWSClient::connectionClosed() {
 void TWSClient::updateAccountValue(const std::string& key, const std::string& val,
                                        const std::string& currency, const std::string& accountName) {
 	printf("UpdateAccountValue. Key: %s, Value: %s, Currency: %s, Account Name: %s\n", key.c_str(), val.c_str(), currency.c_str(), accountName.c_str());
+    Message msg = Message(Message::Type::UpdateAccountValue);
+    UpdateAccountValueData updateAccountValueData = UpdateAccountValueData();
+    updateAccountValueData.key = key;
+    updateAccountValueData.value = val;
+    msg.updateAccountValueData = updateAccountValueData;
+    m_observer(msg);
 }
 //! [updateaccountvalue]
 
@@ -650,7 +688,7 @@ void TWSClient::smartComponents(int reqId, const SmartComponentsMap& theMap) {
 
 //! [tickReqParams]
 void TWSClient::tickReqParams(int tickerId, double minTick, const std::string& bboExchange, int snapshotPermissions) {
-	printf("tickerId: %d, minTick: %g, bboExchange: %s, snapshotPermissions: %u", tickerId, minTick, bboExchange.c_str(), snapshotPermissions);
+	printf("tickerId: %d, minTick: %g, bboExchange: %s, snapshotPermissions: %u\n", tickerId, minTick, bboExchange.c_str(), snapshotPermissions);
 
 	m_bboExchange = bboExchange;
 }
