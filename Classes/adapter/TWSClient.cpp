@@ -76,11 +76,7 @@ bool TWSClient::connect(const char *host, int port, int clientId)
 void TWSClient::disconnect() const
 {
 	m_pClient->eDisconnect();
-    Message msg = Message(Message::Type::Log);
-    LogData logData = LogData();
-    logData.log = "Disconnected";
-    msg.logData = logData;
-    m_observer(msg);
+    m_observer(Message(Message::Type::Disconnect));
 	printf ( "Disconnected\n");
 }
 
@@ -101,10 +97,6 @@ TickerId TWSClient::reqMktData(const Contract &contract) {
     m_tickerId++;
     m_pClient->reqMktData(m_tickerId, contract, "258", false, false, TagValueListSPtr());
     return m_tickerId;
-}
-
-void TWSClient::cancelMktData(long tickerId) {
-    m_pClient->cancelMktData(tickerId);
 }
 
 void TWSClient::reqMarketDataType(int type) {
@@ -171,7 +163,7 @@ void TWSClient::tickPrice( TickerId tickerId, TickType field, double price, cons
     Message msg = Message(Message::Type::TickPrice);
     TickPriceData tickPriceData = TickPriceData();
     tickPriceData.tickerId = tickerId;
-    tickPriceData.field = field;
+    tickPriceData.field = (int)field;
     tickPriceData.price = price;
     msg.tickPriceData = tickPriceData;
     m_observer(msg);
