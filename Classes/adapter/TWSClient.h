@@ -33,7 +33,7 @@ struct UpdatePortfolioData {
 
 struct TickPriceData {
     TickerId tickerId = -1;
-    int field = 0;
+    TickType field = NOT_SET;
     double price = -1;
 };
 
@@ -52,7 +52,6 @@ struct Message {
     enum class Type {
         Unknown,
         Log,
-        Disconnect,
         UpdatePortfolio,
         AccountDownloadFinish,
         TickPrice,
@@ -94,7 +93,9 @@ public:
     void reqAccountUpdates(bool subscribe, const std::string &acctCode);
     void processMsgs();
     TickerId reqMktData(const Contract &contract);
+    void cancelMktData(long tickerId);
     void reqMarketDataType(int type);
+    void reqGlobalCancel();
     std::string getVersion();
     
 public:
