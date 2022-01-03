@@ -16,10 +16,6 @@
 
 class EClientSocket;
 
-struct LogData {
-    std::string log = "";
-};
-
 struct UpdatePortfolioData {
     Contract contract = Contract();
     double position = 0;
@@ -46,6 +42,28 @@ struct TickStringData {
 struct UpdateAccountValueData {
     std::string key = "";
     std::string value = "";
+    std::string accountName = "";
+};
+
+struct OrderStatusData {
+    OrderId orderId;
+    std::string status;
+    double filled;
+    double remaining;
+    double avgFillPrice;
+    int permId;
+    int parentId;
+    double lastFillPrice;
+    int clientId;
+    std::string whyHeld;
+    double mktCapPrice;
+};
+
+struct OpenOrderData {
+    OrderId orderId;
+    Contract contract;
+    Order order;
+    OrderState orderState;
 };
 
 struct Message {
@@ -57,6 +75,8 @@ struct Message {
         TickPrice,
         TickString,
         UpdateAccountValue,
+        OrderStatus,
+        OpenOrder,
     };
     
     Message() : Message(Type::Unknown) {}
@@ -64,11 +84,15 @@ struct Message {
     
     Type type = Type::Unknown;
     
-    LogData logData;
+    // normal
+    std::string log = "";
+    
     UpdatePortfolioData updatePortfolioData;
     TickPriceData tickPriceData;
     TickStringData tickStringData;
     UpdateAccountValueData updateAccountValueData;
+    OrderStatusData orderStatusData;
+    OpenOrderData openOrderData;
 };
 
 //! [ewrapperimpl]
@@ -89,7 +113,7 @@ public:
 	bool isConnected() const;
 
     void setCallback(Observer observer_);
-    void executeOrder(const Contract &contract, const Order &order);
+    OrderId executeOrder(const Contract &contract, const Order &order);
     void reqAccountUpdates(bool subscribe, const std::string &acctCode);
     void processMsgs();
     TickerId reqMktData(const Contract &contract);

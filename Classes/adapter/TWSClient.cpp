@@ -77,9 +77,7 @@ void TWSClient::disconnect() const
 {
 	m_pClient->eDisconnect();
     Message msg = Message(Message::Type::Log);
-    LogData logData = LogData();
-    logData.log = "Disconnected";
-    msg.logData = logData;
+    msg.log = "Disconnected";
     m_observer(msg);
 	printf ( "Disconnected\n");
 }
@@ -89,8 +87,10 @@ bool TWSClient::isConnected() const
 	return m_pClient->isConnected();
 }
 
-void TWSClient::executeOrder(const Contract &contract, const Order &order) {
-    m_pClient->placeOrder(m_orderId++, contract, order);
+OrderId TWSClient::executeOrder(const Contract &contract, const Order &order) {
+    m_orderId++;
+    m_pClient->placeOrder(m_orderId, contract, order);
+    return m_orderId;
 }
 
 void TWSClient::processMsgs() {
@@ -163,9 +163,7 @@ void TWSClient::error(int id, int errorCode, const std::string& errorString)
 {
 	printf( "Error. Id: %d, Code: %d, Msg: %s\n", id, errorCode, errorString.c_str());
     Message msg = Message(Message::Type::Log);
-    LogData logData = LogData();
-    logData.log = "Error. Id: " + std::to_string(id) + ", Code: " + std::to_string(errorCode) + ", Msg: " + errorString.c_str();
-    msg.logData = logData;
+    msg.log = "Error. Id: " + std::to_string(id) + ", Code: " + std::to_string(errorCode) + ", Msg: " + errorString.c_str();
     m_observer(msg);
 }
 //! [error]
@@ -179,6 +177,7 @@ void TWSClient::tickPrice( TickerId tickerId, TickType field, double price, cons
     tickPriceData.field = field;
     tickPriceData.price = price;
     msg.tickPriceData = tickPriceData;
+    msg.log = "Tick Price. Ticker Id: " + std::to_string(tickerId) + ", Field: " + std::to_string((int)field) + ", Price: " + std::to_string(price) + ", CanAutoExecute: " + std::to_string(attribs.canAutoExecute) + ", PastLimit: " + std::to_string(attribs.pastLimit) + ", PreOpen: " + std::to_string(attribs.preOpen);
     m_observer(msg);
 }
 //! [tickprice]
@@ -212,6 +211,7 @@ void TWSClient::tickString(TickerId tickerId, TickType tickType, const std::stri
     tickStringData.tickType = (int)tickType;
     tickStringData.value = value;
     msg.tickStringData = tickStringData;
+    msg.log = "Tick String. Ticker Id: " + std::to_string(tickerId) + ", Type: " + std::to_string((int)tickType) + ", Value: " + value;
     m_observer(msg);
 }
 //! [tickstring]
@@ -226,10 +226,21 @@ void TWSClient::orderStatus(OrderId orderId, const std::string& status, double f
 		double remaining, double avgFillPrice, int permId, int parentId,
 		double lastFillPrice, int clientId, const std::string& whyHeld, double mktCapPrice){
 	printf("OrderStatus. Id: %ld, Status: %s, Filled: %g, Remaining: %g, AvgFillPrice: %g, PermId: %d, LastFillPrice: %g, ClientId: %d, WhyHeld: %s, MktCapPrice: %g\n", orderId, status.c_str(), filled, remaining, avgFillPrice, permId, lastFillPrice, clientId, whyHeld.c_str(), mktCapPrice);
-    Message msg = Message(Message::Type::Log);
-    LogData logData = LogData();
-    logData.log = "OrderStatus. Id: " + std::to_string(orderId) + ", Status: " + status.c_str() + ", Filled: " + std::to_string(filled) + ", Remaining: " + std::to_string(remaining) + ", AvgFillPrice: " + std::to_string(avgFillPrice) + ", PermId: " + std::to_string(permId) + ", LastFillPrice: " + std::to_string(lastFillPrice) + ", ClientId: " + std::to_string(clientId) + ", WhyHeld: " + whyHeld.c_str() + ", MktCapPrice: " + std::to_string(mktCapPrice);
-    msg.logData = logData;
+    Message msg = Message(Message::Type::OrderStatus);
+    OrderStatusData orderStatusData = OrderStatusData();
+    orderStatusData.orderId = orderId;
+    orderStatusData.status = status;
+    orderStatusData.filled = filled;
+    orderStatusData.remaining = remaining;
+    orderStatusData.avgFillPrice = avgFillPrice;
+    orderStatusData.permId = permId;
+    orderStatusData.parentId = parentId;
+    orderStatusData.lastFillPrice = lastFillPrice;
+    orderStatusData.clientId = clientId;
+    orderStatusData.whyHeld = whyHeld;
+    orderStatusData.mktCapPrice = mktCapPrice;
+    msg.orderStatusData = orderStatusData;
+    msg.log = "OrderStatus. Id: " + std::to_string(orderId) + ", Status: " + status.c_str() + ", Filled: " + std::to_string(filled) + ", Remaining: " + std::to_string(remaining) + ", AvgFillPrice: " + std::to_string(avgFillPrice) + ", PermId: " + std::to_string(permId) + ", LastFillPrice: " + std::to_string(lastFillPrice) + ", ClientId: " + std::to_string(clientId) + ", WhyHeld: " + whyHeld.c_str() + ", MktCapPrice: " + std::to_string(mktCapPrice);
     m_observer(msg);
 }
 //! [orderstatus]
@@ -240,10 +251,13 @@ void TWSClient::openOrder( OrderId orderId, const Contract& contract, const Orde
 	"LmtPrice: %g, AuxPrice: %g, Status: %s\n", 
 		order.permId, order.clientId, orderId, order.account.c_str(), contract.symbol.c_str(), contract.secType.c_str(), contract.exchange.c_str(), 
 		order.action.c_str(), order.orderType.c_str(), order.totalQuantity, order.cashQty == UNSET_DOUBLE ? 0 : order.cashQty, order.lmtPrice, order.auxPrice, orderState.status.c_str());
-    Message msg = Message(Message::Type::Log);
-    LogData logData = LogData();
-    logData.log = "OpenOrder. PermId: " + std::to_string(order.permId) + ", ClientId: " + std::to_string(order.clientId) + ", OrderId: " + std::to_string(orderId) + ", Account: " + order.account.c_str() + ", Symbol: " + contract.symbol.c_str() + ", SecType: " + contract.secType.c_str() + ", Exchange: " + contract.exchange.c_str() + ":, Action: " + order.action.c_str() + ", OrderType:" + order.orderType.c_str() + ", TotalQty: " + std::to_string(order.totalQuantity) + ", CashQty: " + std::to_string(order.cashQty == UNSET_DOUBLE ? 0 : order.cashQty) + ", LmtPrice: " + std::to_string(order.lmtPrice) + ", AuxPrice: " + std::to_string(order.auxPrice) + ", Status: " + orderState.status.c_str();
-    msg.logData = logData;
+    Message msg = Message(Message::Type::OpenOrder);
+    OpenOrderData openOrderData = OpenOrderData();
+    openOrderData.orderId = orderId;
+    openOrderData.contract = contract;
+    openOrderData.order = order;
+    openOrderData.orderState = orderState;
+    msg.log = "OpenOrder. PermId: " + std::to_string(order.permId) + ", ClientId: " + std::to_string(order.clientId) + ", OrderId: " + std::to_string(orderId) + ", Account: " + order.account.c_str() + ", Symbol: " + contract.symbol.c_str() + ", SecType: " + contract.secType.c_str() + ", Exchange: " + contract.exchange.c_str() + ":, Action: " + order.action.c_str() + ", OrderType:" + order.orderType.c_str() + ", TotalQty: " + std::to_string(order.totalQuantity) + ", CashQty: " + std::to_string(order.cashQty == UNSET_DOUBLE ? 0 : order.cashQty) + ", LmtPrice: " + std::to_string(order.lmtPrice) + ", AuxPrice: " + std::to_string(order.auxPrice) + ", Status: " + orderState.status.c_str();
     m_observer(msg);
     
 }
@@ -268,7 +282,9 @@ void TWSClient::updateAccountValue(const std::string& key, const std::string& va
     UpdateAccountValueData updateAccountValueData = UpdateAccountValueData();
     updateAccountValueData.key = key;
     updateAccountValueData.value = val;
+    updateAccountValueData.accountName = accountName;
     msg.updateAccountValueData = updateAccountValueData;
+    msg.log = "UpdateAccountValue. Key: " + key + ", Value: " + val + ", Currency: " + currency + ", Account Name: " + accountName;
     m_observer(msg);
 }
 //! [updateaccountvalue]
@@ -289,6 +305,7 @@ void TWSClient::updatePortfolio(const Contract& contract, double position,
     data.accountName = accountName;
     Message msg = Message(Message::Type::UpdatePortfolio);
     msg.updatePortfolioData = data;
+    msg.log = "UpdatePortfolio. " + contract.symbol + ", " + contract.secType + " @ " + contract.primaryExchange + ": Position: " + std::to_string(position) + ", MarketPrice: " + std::to_string(marketPrice) + ", MarketValue: " + std::to_string(marketValue) + ", AverageCost: " + std::to_string(averageCost) + ", UnrealizedPNL: " + std::to_string(unrealizedPNL) + ", RealizedPNL: " + std::to_string(realizedPNL) + ", AccountName: " + accountName;
     m_observer(msg);
 }
 //! [updateportfolio]
@@ -302,7 +319,9 @@ void TWSClient::updateAccountTime(const std::string& timeStamp) {
 //! [accountdownloadend]
 void TWSClient::accountDownloadEnd(const std::string& accountName) {
     m_pClient->reqAccountUpdates(false, accountName);
-    m_observer(Message(Message::Type::AccountDownloadFinish));
+    Message msg = Message(Message::Type::AccountDownloadFinish);
+    msg.log = "accountDownloadEnd";
+    m_observer(msg);
 	printf( "Account download finished: %s\n", accountName.c_str());
 }
 //! [accountdownloadend]
