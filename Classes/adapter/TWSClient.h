@@ -66,6 +66,10 @@ struct OpenOrderData {
     OrderState orderState;
 };
 
+struct AccountListData {
+    std::string accountList;
+};
+
 struct Message {
     enum class Type {
         Unknown,
@@ -77,6 +81,7 @@ struct Message {
         UpdateAccountValue,
         OrderStatus,
         OpenOrder,
+        AccountList,
     };
     
     Message() : Message(Type::Unknown) {}
@@ -93,6 +98,7 @@ struct Message {
     UpdateAccountValueData updateAccountValueData;
     OrderStatusData orderStatusData;
     OpenOrderData openOrderData;
+    AccountListData accountListData;
 };
 
 //! [ewrapperimpl]

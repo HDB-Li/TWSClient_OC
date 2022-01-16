@@ -475,6 +475,12 @@ void TWSClient::updateNewsBulletin(int msgId, int msgType, const std::string& ne
 //! [managedaccounts]
 void TWSClient::managedAccounts( const std::string& accountsList) {
 	printf( "Account List: %s\n", accountsList.c_str());
+    Message msg = Message(Message::Type::AccountList);
+    AccountListData accountListData = AccountListData();
+    accountListData.accountList = accountsList;
+    msg.accountListData = accountListData;
+    msg.log = "Account List: " + accountsList;
+    m_observer(msg);
 }
 //! [managedaccounts]
 
